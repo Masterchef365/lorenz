@@ -23,12 +23,16 @@ fn lorenz_with_time(time: f32) -> Vec<Vertex> {
     lorenz_lines(
         [1., 1., 1.].into(),
         [
-            mix(0.5, 1., anim3) * 10.,
-            mix(0.5, 1., anim2) * 28.,
-            anim * 8. / 3.,
+            //mix(0.5, 1., anim3) * 10.,
+            //mix(0.5, 1., anim2) * 28.,
+            //anim * 8. / 3.,
+
+            10.,
+            28.,
+            8. / 3.,
         ],
-        0.01,
-        40_000,
+        0.0025,
+        400_000,
         [1.; 3],
         1. / 10.,
     )
@@ -44,7 +48,7 @@ impl App for LorenzViz {
             indices: ctx.indices(&indices, false)?,
             lines_shader: ctx.shader(
                 DEFAULT_VERTEX_SHADER,
-                DEFAULT_FRAGMENT_SHADER,
+                &std::fs::read("./shaders/unlit.frag.spv")?,
                 Primitive::Lines,
             )?,
             camera: MultiPlatformCamera::new(platform),
@@ -53,7 +57,7 @@ impl App for LorenzViz {
 
     fn frame(&mut self, ctx: &mut Context, _: &mut Platform) -> Result<Vec<DrawCmd>> {
         let vertices = lorenz_with_time(ctx.start_time().elapsed().as_secs_f32());
-        ctx.update_vertices(self.verts, &vertices)?;
+        //ctx.update_vertices(self.verts, &vertices)?;
 
         Ok(vec![DrawCmd::new(self.verts)
             .indices(self.indices)
@@ -92,10 +96,14 @@ fn lorenz_lines(
         ode.step(f);
         Some(ode.y().into())
     })
-    .map(|pos: [f32; 3]| {
+    .enumerate()
+    .map(|(idx, pos): (usize, [f32; 3])| {
+        let idx = idx as f32;
+        let i = idx / n as f32;
         Vertex::new(
             pos.map(|v| v * scale),
-            lorenz(pos, coeffs).map(|v| v.abs().sqrt() * scale),
+            [i, idx, 0.],
+            //lorenz(pos, coeffs).map(|v| v.abs().sqrt() * scale),
         )
     })
     .take(n)
