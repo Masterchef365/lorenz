@@ -31,7 +31,7 @@ fn lorenz_with_time(time: f32) -> Vec<Vertex> {
             8. / 3.,
         ],
         0.005,
-        200_000,
+        300_000,
         [1.; 3],
         1. / 10.,
     )
@@ -55,7 +55,7 @@ impl App for LorenzViz {
     }
 
     fn frame(&mut self, ctx: &mut Context, _: &mut Platform) -> Result<Vec<DrawCmd>> {
-        let vertices = lorenz_with_time(ctx.start_time().elapsed().as_secs_f32());
+        //let vertices = lorenz_with_time(ctx.start_time().elapsed().as_secs_f32());
         //ctx.update_vertices(self.verts, &vertices)?;
 
         Ok(vec![DrawCmd::new(self.verts)
