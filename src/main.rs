@@ -2,7 +2,7 @@ use idek::{prelude::*, IndexBuffer, MultiPlatformCamera};
 use ultraviolet::Vec3;
 
 fn main() -> Result<()> {
-    launch::<_, LorenzViz>(Settings::default().vr_if_any_args())
+    launch::<_, LorenzViz>(Settings::default().vr_if_any_args().msaa_samples(8))
 }
 
 struct LorenzViz {
@@ -26,13 +26,12 @@ fn lorenz_with_time(time: f32) -> Vec<Vertex> {
             //mix(0.5, 1., anim3) * 10.,
             //mix(0.5, 1., anim2) * 28.,
             //anim * 8. / 3.,
-
             10.,
             28.,
             8. / 3.,
         ],
-        0.0025,
-        400_000,
+        0.005,
+        200_000,
         [1.; 3],
         1. / 10.,
     )
@@ -44,7 +43,7 @@ impl App for LorenzViz {
         let indices = line_strip_indices(vertices.len());
 
         Ok(Self {
-            verts: ctx.vertices(&vertices, true)?,
+            verts: ctx.vertices(&vertices, false)?,
             indices: ctx.indices(&indices, false)?,
             lines_shader: ctx.shader(
                 DEFAULT_VERTEX_SHADER,
@@ -83,7 +82,7 @@ fn lorenz_lines(
     coeffs: [f32; 3],
     dt: f32,
     n: usize,
-    color: [f32; 3],
+    _color: [f32; 3],
     scale: f32,
 ) -> Vec<Vertex> {
     let mut ode = RungeKutta::new(0., initial_pos, dt);
@@ -100,9 +99,11 @@ fn lorenz_lines(
     .map(|(idx, pos): (usize, [f32; 3])| {
         let idx = idx as f32;
         let i = idx / n as f32;
+        let deriv = lorenz(pos, coeffs);
+        let vel = deriv.into_iter().map(|v| v * v).sum::<f32>().sqrt();
         Vertex::new(
             pos.map(|v| v * scale),
-            [i, idx, 0.],
+            [i, idx, vel],
             //lorenz(pos, coeffs).map(|v| v.abs().sqrt() * scale),
         )
     })
