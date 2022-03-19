@@ -16,9 +16,9 @@ impl App for LorenzViz {
     fn init(ctx: &mut Context, platform: &mut Platform, _: ()) -> Result<Self> {
         let (vertices, indices) = lorenz_lines(
             [1., 1., 1.].into(),
-            [5., 28., 8. / 3.],
+            [10., 28., 8. / 3.],
             0.01,
-            400,
+            4000,
             [1.; 3],
             1. / 10.,
         );
@@ -85,7 +85,7 @@ fn lorenz_lines(
 }
 
 fn lorenz([x, y, z]: [f32; 3], [sigma, rho, beta]: [f32; 3]) -> [f32; 3] {
-    [sigma * (x - y), x * (rho - z) - y, x * y - beta * z]
+    [sigma * (y - x), x * (rho - z) - y, x * y - beta * z]
 }
 
 pub struct RungeKutta {
