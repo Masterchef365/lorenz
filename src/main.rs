@@ -12,19 +12,35 @@ struct LorenzViz {
     lines_shader: Shader,
 }
 
+fn mix(a: f32, b: f32, t: f32) -> f32 {
+    a * (1. - t) + b * t
+}
+
+fn lorenz_with_time(time: f32) -> Vec<Vertex> {
+    let anim = (time.cos() + 1.) / 2.;
+    let anim2 = ((time * 1.2).sin() + 1.) / 2.;
+    let anim3 = ((time * 1.7 + 2.32).cos() + 1.) / 2.;
+    lorenz_lines(
+        [1., 1., 1.].into(),
+        [
+            mix(0.5, 1., anim3) * 10.,
+            mix(0.5, 1., anim2) * 28.,
+            anim * 8. / 3.,
+        ],
+        0.01,
+        40_000,
+        [1.; 3],
+        1. / 10.,
+    )
+}
+
 impl App for LorenzViz {
     fn init(ctx: &mut Context, platform: &mut Platform, _: ()) -> Result<Self> {
-        let (vertices, indices) = lorenz_lines(
-            [1., 1., 1.].into(),
-            [10., 28., 8. / 3.],
-            0.01,
-            4000,
-            [1.; 3],
-            1. / 10.,
-        );
+        let vertices = lorenz_with_time(0.);
+        let indices = line_strip_indices(vertices.len());
 
         Ok(Self {
-            verts: ctx.vertices(&vertices, false)?,
+            verts: ctx.vertices(&vertices, true)?,
             indices: ctx.indices(&indices, false)?,
             lines_shader: ctx.shader(
                 DEFAULT_VERTEX_SHADER,
@@ -35,7 +51,10 @@ impl App for LorenzViz {
         })
     }
 
-    fn frame(&mut self, _ctx: &mut Context, _: &mut Platform) -> Result<Vec<DrawCmd>> {
+    fn frame(&mut self, ctx: &mut Context, _: &mut Platform) -> Result<Vec<DrawCmd>> {
+        let vertices = lorenz_with_time(ctx.start_time().elapsed().as_secs_f32());
+        ctx.update_vertices(self.verts, &vertices)?;
+
         Ok(vec![DrawCmd::new(self.verts)
             .indices(self.indices)
             .shader(self.lines_shader)])
@@ -62,26 +81,29 @@ fn lorenz_lines(
     n: usize,
     color: [f32; 3],
     scale: f32,
-) -> (Vec<Vertex>, Vec<u32>) {
+) -> Vec<Vertex> {
     let mut ode = RungeKutta::new(0., initial_pos, dt);
 
     let f = |_, pos: Vec3| lorenz(pos.into(), coeffs).into();
 
     ode.step(f);
 
-    let vertices: Vec<Vertex> = std::iter::from_fn(|| {
+    std::iter::from_fn(|| {
         ode.step(f);
         Some(ode.y().into())
     })
-    .map(|pos: [f32; 3]| pos.map(|v| v * scale))
-    .map(|pos| Vertex::new(pos, color))
+    .map(|pos: [f32; 3]| {
+        Vertex::new(
+            pos.map(|v| v * scale),
+            lorenz(pos, coeffs).map(|v| v.abs().sqrt() * scale),
+        )
+    })
     .take(n)
-    .collect();
-    let indices: Vec<u32> = (0..)
-        .map(|i| (i + 1) / 2)
-        .take((vertices.len() - 1) * 2)
-        .collect();
-    (vertices, indices)
+    .collect()
+}
+
+fn line_strip_indices(n: usize) -> Vec<u32> {
+    (0..).map(|i| (i + 1) / 2).take((n - 1) * 2).collect()
 }
 
 fn lorenz([x, y, z]: [f32; 3], [sigma, rho, beta]: [f32; 3]) -> [f32; 3] {
