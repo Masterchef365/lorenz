@@ -1,0 +1,8 @@
+[package]
+name = "lorenz"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+idek = { git = "https://github.com/Masterchef365/idek.git", rev = "6a5678f" }
+anyhow = "1"
