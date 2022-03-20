@@ -8,8 +8,13 @@ fn main() -> Result<()> {
 struct LorenzViz {
     verts: VertexBuffer,
     indices: IndexBuffer,
+
+    grid_verts: VertexBuffer,
+    grid_indices: IndexBuffer,
+
     camera: MultiPlatformCamera,
-    lines_shader: Shader,
+    lorenz_shader: Shader,
+    line_shader: Shader,
 }
 
 fn mix(a: f32, b: f32, t: f32) -> f32 {
@@ -42,14 +47,25 @@ impl App for LorenzViz {
         let vertices = lorenz_with_time(0.);
         let indices = line_strip_indices(vertices.len());
 
+        let (grid_verts, grid_indices) = grid(100, 3., [0.1; 3]);
+
         Ok(Self {
             verts: ctx.vertices(&vertices, false)?,
             indices: ctx.indices(&indices, false)?,
-            lines_shader: ctx.shader(
+
+            grid_verts: ctx.vertices(&grid_verts, false)?,
+            grid_indices: ctx.indices(&grid_indices, false)?,
+            line_shader: ctx.shader(
+                DEFAULT_VERTEX_SHADER,
+                DEFAULT_FRAGMENT_SHADER,
+                Primitive::Lines,
+                Blend::Opaque
+            )?,
+            lorenz_shader: ctx.shader(
                 DEFAULT_VERTEX_SHADER,
                 &std::fs::read("./shaders/unlit.frag.spv")?,
                 Primitive::Lines,
-                Blend::Opaque
+                Blend::Additive
             )?,
             camera: MultiPlatformCamera::new(platform),
         })
@@ -59,22 +75,37 @@ impl App for LorenzViz {
         //let vertices = lorenz_with_time(ctx.start_time().elapsed().as_secs_f32());
         //ctx.update_vertices(self.verts, &vertices)?;
 
-        let large: f32 = 180.;
+        let large: f32 = 80.;
         let small: f32 = 1. / 10.;
 
         let time = ctx.start_time().elapsed().as_secs_f32();
-        let anim = ((((triangle(time / 50.) * 2. - 1.) * 2.) + 1.) / 2.).clamp(0., 1.);
+        let anim = ((((triangle(time / 250.) * 2. - 1.) * 3.) + 1.) / 2.).clamp(0., 1.);
         let sz = (10.0f32).powf(mix(small.log10(), large.log10(), anim));
+
+        let sz = large;
 
         Ok(vec![DrawCmd::new(self.verts)
             .indices(self.indices)
-            .shader(self.lines_shader)
+            .shader(self.lorenz_shader)
             .transform([
                 [sz, 0., 0., 0.],
                 [0., sz, 0., 0.],
                 [0., 0., sz, 0.],
-                [0. * -sz * 2., 1.4, -sz * 1.8, 1.]
-            ])])
+                [0. * -sz * 2., sz * 0.5, -sz * 1.8, 1.]
+            ]),
+            DrawCmd::new(self.grid_verts)
+                .indices(self.grid_indices)
+                .shader(self.line_shader)
+                .transform([
+                    [1., 0., 0., 0.],
+                    [0., 0., 1., 0.],
+                    [0., 1., 0., 0.],
+                    [0., 0., 3. * 3., 1.],
+            ]),
+            DrawCmd::new(self.grid_verts)
+                .indices(self.grid_indices)
+                .shader(self.line_shader)
+        ])
     }
 
     fn event(
@@ -170,4 +201,28 @@ impl RungeKutta {
 
 fn triangle(x: f32) -> f32 {
     (x.fract() - 0.5).abs() * 2.
+}
+
+
+fn grid(size: i32, scale: f32, color: [f32; 3]) -> (Vec<Vertex>, Vec<u32>) {
+    let mut vertices = Vec::new();
+    let mut indices = Vec::new();
+    let mut index = 0;
+    let mut push_line = |a, b| {
+        vertices.push(Vertex { pos: a, color });
+        vertices.push(Vertex { pos: b, color });
+        indices.push(index);
+        index += 1;
+        indices.push(index);
+        index += 1;
+    };
+
+    let l = size as f32 * scale;
+    for i in -size..=size {
+        let f = i as f32 * scale;
+        push_line([l, 0.0, f], [-l, 0.0, f]);
+        push_line([f, 0.0, l], [f, 0.0, -l]);
+    }
+
+    (vertices, indices)
 }
