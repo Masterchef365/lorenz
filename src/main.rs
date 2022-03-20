@@ -58,9 +58,16 @@ impl App for LorenzViz {
         //let vertices = lorenz_with_time(ctx.start_time().elapsed().as_secs_f32());
         //ctx.update_vertices(self.verts, &vertices)?;
 
+        let sz = 80.;
         Ok(vec![DrawCmd::new(self.verts)
             .indices(self.indices)
-            .shader(self.lines_shader)])
+            .shader(self.lines_shader)
+            .transform([
+                [sz, 0., 0., 0.],
+                [0., sz, 0., 0.],
+                [0., 0., sz, 0.],
+                [0., 2., -sz * 2., 1.]
+            ])])
     }
 
     fn event(
