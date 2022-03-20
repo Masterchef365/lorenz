@@ -18,7 +18,7 @@ vec3 hsv2rgb(vec3 c) {
 
 void main() {
     float i = fragColor.y;
-    float colormix = pow(fragColor.z / 300, 2.0);
+    float colormix = pow(fragColor.z / 30, 2.0);
 
     float band = fract(i / 80. + anim * 0.7);
 

@@ -23,13 +23,14 @@ fn lorenz_with_time(time: f32) -> Vec<Vertex> {
     //let anim2 = ((time * 1.2).sin() + 1.) / 2.;
     //let anim3 = ((time * 1.7 + 2.32).cos() + 1.) / 2.;
 
-    let perturb = anim * 0.01;
+    let perturb = 0.01;
+    //let perturb = anim * 0.1;
 
     lorenz_lines(
         //[8.001, 8., 8., 8., 8.],
-        [8.01, 8., 8., 8., 8.],
+        [8. + perturb, 8., 8., 8., 8. - perturb],
         0.01,
-        3_000,
+        300_000,
         [1.; 3],
         1. / 10.,
     )
@@ -53,8 +54,8 @@ impl App for LorenzViz {
     }
 
     fn frame(&mut self, ctx: &mut Context, _: &mut Platform) -> Result<Vec<DrawCmd>> {
-        let vertices = lorenz_with_time(ctx.start_time().elapsed().as_secs_f32());
-        ctx.update_vertices(self.verts, &vertices)?;
+        //let vertices = lorenz_with_time(ctx.start_time().elapsed().as_secs_f32());
+        //ctx.update_vertices(self.verts, &vertices)?;
 
         Ok(vec![DrawCmd::new(self.verts)
             .indices(self.indices)
