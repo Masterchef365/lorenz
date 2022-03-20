@@ -20,11 +20,14 @@ void main() {
     float i = fragColor.y;
     float colormix = pow(fragColor.z / 30, 2.0);
 
-    float band = fract(i / 80. + anim * 0.7);
+    float band = fract(i / 80. - anim * 0.3);
+    float cutoff = 0.1;
+    if (band > cutoff) discard;
+    band /= cutoff;
 
     vec3 color = hsv2rgb(mix(
-        mix(vec3(0.3, 0., band), vec3(0.3, 0.8, 1.), colormix),
-        mix(vec3(0.5, 1., 1.), vec3(0.5, 1., band), colormix),
+        mix(vec3(0.3, 0., band), vec3(0.3, 0.8, band), colormix),
+        mix(vec3(0.5, 1., band), vec3(0.5, 1., band), colormix),
         colormix
     ));
     outColor = vec4(color, 1.0);

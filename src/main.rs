@@ -28,7 +28,7 @@ fn lorenz_with_time(time: f32) -> Vec<Vertex> {
 
     lorenz_lines(
         //[8.001, 8., 8., 8., 8.],
-        [8. + perturb, 8., 8., 8., 8. - perturb],
+        [8., 8., 8., 8., 8. - perturb],
         0.01,
         300_000,
         [1.; 3],
@@ -36,26 +36,31 @@ fn lorenz_with_time(time: f32) -> Vec<Vertex> {
     )
 }
 
+const ANIMATE: bool = false;
+
 impl App for LorenzViz {
     fn init(ctx: &mut Context, platform: &mut Platform, _: ()) -> Result<Self> {
         let vertices = lorenz_with_time(0.);
         let indices = line_strip_indices(vertices.len());
 
         Ok(Self {
-            verts: ctx.vertices(&vertices, true)?,
+            verts: ctx.vertices(&vertices, ANIMATE)?,
             indices: ctx.indices(&indices, false)?,
             lines_shader: ctx.shader(
                 DEFAULT_VERTEX_SHADER,
                 &std::fs::read("./shaders/unlit.frag.spv")?,
                 Primitive::Lines,
+                Blend::Additive,
             )?,
             camera: MultiPlatformCamera::new(platform),
         })
     }
 
     fn frame(&mut self, ctx: &mut Context, _: &mut Platform) -> Result<Vec<DrawCmd>> {
-        //let vertices = lorenz_with_time(ctx.start_time().elapsed().as_secs_f32());
-        //ctx.update_vertices(self.verts, &vertices)?;
+        if ANIMATE {
+            let vertices = lorenz_with_time(ctx.start_time().elapsed().as_secs_f32());
+            ctx.update_vertices(self.verts, &vertices)?;
+        }
 
         Ok(vec![DrawCmd::new(self.verts)
             .indices(self.indices)
