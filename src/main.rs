@@ -2,7 +2,7 @@ use idek::{prelude::*, IndexBuffer, MultiPlatformCamera};
 use ultraviolet::Vec3;
 
 fn main() -> Result<()> {
-    launch::<_, LorenzViz>(Settings::default().vr_if_any_args().msaa_samples(8))
+    launch::<_, LorenzViz>(Settings::default().vr_if_any_args().msaa_samples(16))
 }
 
 struct LorenzViz {
@@ -30,8 +30,8 @@ fn lorenz_with_time(time: f32) -> Vec<Vertex> {
             28.,
             8. / 3.,
         ],
-        0.005,
-        300_000,
+        0.002,
+        400_000,
         [1.; 3],
         1. / 10.,
     )
@@ -49,6 +49,7 @@ impl App for LorenzViz {
                 DEFAULT_VERTEX_SHADER,
                 &std::fs::read("./shaders/unlit.frag.spv")?,
                 Primitive::Lines,
+                Blend::Additive
             )?,
             camera: MultiPlatformCamera::new(platform),
         })
@@ -58,7 +59,7 @@ impl App for LorenzViz {
         //let vertices = lorenz_with_time(ctx.start_time().elapsed().as_secs_f32());
         //ctx.update_vertices(self.verts, &vertices)?;
 
-        let sz = 80.;
+        let sz = 180.;
         Ok(vec![DrawCmd::new(self.verts)
             .indices(self.indices)
             .shader(self.lines_shader)
@@ -66,7 +67,7 @@ impl App for LorenzViz {
                 [sz, 0., 0., 0.],
                 [0., sz, 0., 0.],
                 [0., 0., sz, 0.],
-                [0., 2., -sz * 2., 1.]
+                [0., 2., -sz * 3.8, 1.]
             ])])
     }
 
