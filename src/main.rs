@@ -21,9 +21,9 @@ fn lorenz_with_time(time: f32) -> Vec<Vertex> {
     //let anim2 = ((time * 1.2).sin() + 1.) / 2.;
     //let anim3 = ((time * 1.7 + 2.32).cos() + 1.) / 2.;
     lorenz_lines(
-        [1.01, 1., 1., 1., 1.],
+        [8.01, 8., 8., 8., 8.],
         0.01,
-        30_000,
+        300_000,
         [1.; 3],
         1. / 10.,
     )
