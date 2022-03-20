@@ -1,6 +1,8 @@
 use idek::{prelude::*, IndexBuffer, MultiPlatformCamera};
 
 fn main() -> Result<()> {
+    //dbg!(lorenz_96(0., [8.01 + 10., 8., 8., 8., 8.]));
+    //Ok(())
     launch::<_, LorenzViz>(Settings::default().vr_if_any_args().msaa_samples(8))
 }
 
@@ -25,7 +27,7 @@ fn lorenz_with_time(time: f32) -> Vec<Vertex> {
 
     lorenz_lines(
         //[8.001, 8., 8., 8., 8.],
-        [8. + perturb, 8., 8., 8., 8.],
+        [8.01, 8., 8., 8., 8.],
         0.01,
         3_000,
         [1.; 3],
@@ -113,7 +115,15 @@ fn lorenz_96<const D: usize>(_t: f32, x: [f32; D]) -> [f32; D] {
 
     let mut deriv = [0.0; D];
     deriv.iter_mut().enumerate().for_each(|(i, d)| {
-        *d = (x[(i + 1) % D] - x[(i - 2) % D]) * x[(i - 1) % D] - x[i] + f
+        let wrap = |k: i32| {
+            let idx = i as i32 + k;
+            if idx < 0 {
+                (D as i32 + idx) as usize
+            } else {
+                idx as usize % D
+            }
+        };
+        *d = (x[wrap(1)] - x[wrap(-2)]) * x[wrap(-1)] - x[i] + f
     });
 
     deriv
