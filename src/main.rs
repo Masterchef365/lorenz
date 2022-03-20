@@ -49,7 +49,7 @@ impl App for LorenzViz {
                 DEFAULT_VERTEX_SHADER,
                 &std::fs::read("./shaders/unlit.frag.spv")?,
                 Primitive::Lines,
-                Blend::Additive
+                Blend::Opaque
             )?,
             camera: MultiPlatformCamera::new(platform),
         })
@@ -59,7 +59,13 @@ impl App for LorenzViz {
         //let vertices = lorenz_with_time(ctx.start_time().elapsed().as_secs_f32());
         //ctx.update_vertices(self.verts, &vertices)?;
 
-        let sz = 180.;
+        let large: f32 = 180.;
+        let small: f32 = 1. / 10.;
+
+        let time = ctx.start_time().elapsed().as_secs_f32();
+        let anim = ((((triangle(time / 50.) * 2. - 1.) * 2.) + 1.) / 2.).clamp(0., 1.);
+        let sz = (10.0f32).powf(mix(small.log10(), large.log10(), anim));
+
         Ok(vec![DrawCmd::new(self.verts)
             .indices(self.indices)
             .shader(self.lines_shader)
@@ -67,7 +73,7 @@ impl App for LorenzViz {
                 [sz, 0., 0., 0.],
                 [0., sz, 0., 0.],
                 [0., 0., sz, 0.],
-                [0., 2., -sz * 3.8, 1.]
+                [0. * -sz * 2., 1.4, -sz * 1.8, 1.]
             ])])
     }
 
@@ -160,4 +166,8 @@ impl RungeKutta {
     pub fn y(&self) -> Vec3 {
         self.y
     }
+}
+
+fn triangle(x: f32) -> f32 {
+    (x.fract() - 0.5).abs() * 2.
 }
