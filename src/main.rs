@@ -1,5 +1,4 @@
 use idek::{prelude::*, IndexBuffer, MultiPlatformCamera};
-use ultraviolet::Vec3;
 
 fn main() -> Result<()> {
     launch::<_, LorenzViz>(Settings::default().vr_if_any_args().msaa_samples(8))
@@ -17,13 +16,18 @@ fn mix(a: f32, b: f32, t: f32) -> f32 {
 }
 
 fn lorenz_with_time(time: f32) -> Vec<Vertex> {
-    //let anim = (time.cos() + 1.) / 2.;
+    let time = time / 100.;
+    let anim = (time.sin() + 1.) / 2.;
     //let anim2 = ((time * 1.2).sin() + 1.) / 2.;
     //let anim3 = ((time * 1.7 + 2.32).cos() + 1.) / 2.;
+
+    let perturb = anim * 0.01;
+
     lorenz_lines(
-        [8.01, 8., 8., 8., 8.],
+        //[8.001, 8., 8., 8., 8.],
+        [8. + perturb, 8., 8., 8., 8.],
         0.01,
-        300_000,
+        3_000,
         [1.; 3],
         1. / 10.,
     )
@@ -35,7 +39,7 @@ impl App for LorenzViz {
         let indices = line_strip_indices(vertices.len());
 
         Ok(Self {
-            verts: ctx.vertices(&vertices, false)?,
+            verts: ctx.vertices(&vertices, true)?,
             indices: ctx.indices(&indices, false)?,
             lines_shader: ctx.shader(
                 DEFAULT_VERTEX_SHADER,
@@ -47,8 +51,8 @@ impl App for LorenzViz {
     }
 
     fn frame(&mut self, ctx: &mut Context, _: &mut Platform) -> Result<Vec<DrawCmd>> {
-        //let vertices = lorenz_with_time(ctx.start_time().elapsed().as_secs_f32());
-        //ctx.update_vertices(self.verts, &vertices)?;
+        let vertices = lorenz_with_time(ctx.start_time().elapsed().as_secs_f32());
+        ctx.update_vertices(self.verts, &vertices)?;
 
         Ok(vec![DrawCmd::new(self.verts)
             .indices(self.indices)
@@ -138,14 +142,14 @@ impl<const D: usize> RungeKutta<D> {
             self.step,
             f(
                 self.x + self.step / 2.,
-                scalar_mul_nd(1. / 2., add_nd(self.y, k1)),
+                add_nd(self.y, scalar_mul_nd(1. / 2., k1)),
             ),
         );
         let k3 = scalar_mul_nd(
             self.step,
             f(
                 self.x + self.step / 2.,
-                scalar_mul_nd(1. / 2., add_nd(self.y, k2)),
+                add_nd(self.y, scalar_mul_nd(1. / 2., k2)),
             ),
         );
         let k4 = scalar_mul_nd(self.step, f(self.x + self.step, add_nd(self.y, k3)));
