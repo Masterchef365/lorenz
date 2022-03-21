@@ -18,12 +18,13 @@ vec3 hsv2rgb(vec3 c) {
 
 void main() {
     float i = fragColor.y;
-    float colormix = pow(fragColor.z / 30, 2.0);
+    float colormix = pow(fragColor.z / 40, 2.0);
 
     float band = fract(i / 80. - anim * 0.3);
-    float cutoff = 0.1;
-    if (band > cutoff) discard;
-    band /= cutoff;
+    band = 1.0;
+    //float cutoff = 0.07;
+    //if (band > cutoff) discard;
+    //band /= cutoff;
 
     vec3 color = hsv2rgb(mix(
         mix(vec3(0.3, 0., band), vec3(0.3, 0.8, band), colormix),

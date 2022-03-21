@@ -18,25 +18,31 @@ fn mix(a: f32, b: f32, t: f32) -> f32 {
 }
 
 fn lorenz_with_time(time: f32) -> Vec<Vertex> {
-    let time = time / 100.;
-    let anim = (time.sin() + 1.) / 2.;
-    //let anim2 = ((time * 1.2).sin() + 1.) / 2.;
+    let time = time / 1.;
+    let anim = time.sin();
+    let anim2 = (time * 1.2 + 0.3).sin();
     //let anim3 = ((time * 1.7 + 2.32).cos() + 1.) / 2.;
 
-    let perturb = 0.01;
-    //let perturb = anim * 0.1;
+
+    let f = 8.;
+
+    //let f = 8. - anim2 * 0.1;
+
+    let f = [f - anim, f + anim2, f - anim, f - anim2, f + anim2];
+    let mut x0 = f;
+    x0[0] += 0.01;
 
     lorenz_lines(
-        //[8.001, 8., 8., 8., 8.],
-        [8., 8., 8., 8., 8. - perturb],
+        x0,
+        f,
         0.01,
-        300_000,
+        30_000,
         [1.; 3],
         1. / 10.,
     )
 }
 
-const ANIMATE: bool = false;
+const ANIMATE: bool = true;
 
 impl App for LorenzViz {
     fn init(ctx: &mut Context, platform: &mut Platform, _: ()) -> Result<Self> {
@@ -83,6 +89,7 @@ impl App for LorenzViz {
 
 fn lorenz_lines<const D: usize>(
     initial_pos: [f32; D],
+    f: [f32; D],
     dt: f32,
     n: usize,
     _color: [f32; 3],
@@ -90,17 +97,18 @@ fn lorenz_lines<const D: usize>(
 ) -> Vec<Vertex> {
     let mut ode = RungeKutta::new(0., initial_pos, dt);
 
-    ode.step(lorenz_96);
+    let lorenz = |t, pos| lorenz_96(t, pos, f);
+    ode.step(lorenz);
 
     std::iter::from_fn(|| {
-        ode.step(lorenz_96);
+        ode.step(lorenz);
         Some(ode.y())
     })
     .enumerate()
     .map(|(idx, pos): (usize, [f32; D])| {
         let idx = idx as f32;
         let i = idx / n as f32;
-        let deriv = lorenz_96(0.0, pos);
+        let deriv = lorenz(0., pos);
         let vel = deriv.into_iter().map(|v| v * v).sum::<f32>().sqrt();
         Vertex::new(
             scalar_mul_nd(scale, trunc_3d(pos)),
@@ -116,11 +124,9 @@ fn line_strip_indices(n: usize) -> Vec<u32> {
     (0..).map(|i| (i + 1) / 2).take((n - 1) * 2).collect()
 }
 
-fn lorenz_96<const D: usize>(_t: f32, x: [f32; D]) -> [f32; D] {
-    let f = 8.;
-
+fn lorenz_96<const D: usize>(_t: f32, x: [f32; D], f: [f32; D]) -> [f32; D] {
     let mut deriv = [0.0; D];
-    deriv.iter_mut().enumerate().for_each(|(i, d)| {
+    deriv.iter_mut().zip(f).enumerate().for_each(|(i, (d, f))| {
         let wrap = |k: i32| {
             let idx = i as i32 + k;
             if idx < 0 {
