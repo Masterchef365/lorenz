@@ -23,14 +23,14 @@ fn lorenz_with_time(time: f32) -> Vec<Vertex> {
     //let anim2 = ((time * 1.2).sin() + 1.) / 2.;
     //let anim3 = ((time * 1.7 + 2.32).cos() + 1.) / 2.;
 
-    let perturb = 0.01;
+    let perturb = anim * 0.01;
     //let perturb = anim * 0.1;
 
     lorenz_lines(
         //[8.001, 8., 8., 8., 8.],
         [8., 8., 8., 8., 8. - perturb],
         0.01,
-        400_000,
+        4000,
         [1.; 3],
         1. / 10.,
     )
@@ -99,7 +99,7 @@ fn lorenz_lines<const D: usize>(
     .enumerate()
     .map(|(idx, pos): (usize, [f32; D])| {
         let idx = idx as f32;
-        let i = idx / n as f32;
+        let i = idx / n as f32 * dt;
         let deriv = lorenz_96(0.0, pos);
         let vel = deriv.into_iter().map(|v| v * v).sum::<f32>().sqrt();
         Vertex::new(

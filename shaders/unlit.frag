@@ -17,10 +17,14 @@ vec3 hsv2rgb(vec3 c) {
 }
 
 void main() {
-    float i = fragColor.y;
+    float i = fragColor.x;
     float colormix = clamp((fragColor.z - 25.) / 40., 0., 1.);
 
-    float band = fract(i / 80. - anim * 0.3);
+    float time = anim * 0.3;
+
+    //float anim_pos =  
+
+    float band = fract(i * 890. - time);
     float cutoff = 0.1;
     if (band > cutoff) discard;
     band /= cutoff;
