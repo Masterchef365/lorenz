@@ -13,14 +13,14 @@ struct LorenzViz {
     lines_shader: Shader,
 }
 
-fn mix(a: f32, b: f32, t: f32) -> f32 {
+/*fn mix(a: f32, b: f32, t: f32) -> f32 {
     a * (1. - t) + b * t
-}
+}*/
 
-fn lorenz_with_time(time: f32) -> Vec<Vertex> {
-    let anim = (time.cos() + 1.) / 2.;
-    let anim2 = ((time * 1.2).sin() + 1.) / 2.;
-    let anim3 = ((time * 1.7 + 2.32).cos() + 1.) / 2.;
+fn lorenz_with_time(_time: f32) -> Vec<Vertex> {
+    //let anim = (time.cos() + 1.) / 2.;
+    //let anim2 = ((time * 1.2).sin() + 1.) / 2.;
+    //let anim3 = ((time * 1.7 + 2.32).cos() + 1.) / 2.;
     lorenz_lines(
         [1., 1., 1.].into(),
         [
@@ -55,7 +55,7 @@ impl App for LorenzViz {
         })
     }
 
-    fn frame(&mut self, ctx: &mut Context, _: &mut Platform) -> Result<Vec<DrawCmd>> {
+    fn frame(&mut self, _ctx: &mut Context, _: &mut Platform) -> Result<Vec<DrawCmd>> {
         //let vertices = lorenz_with_time(ctx.start_time().elapsed().as_secs_f32());
         //ctx.update_vertices(self.verts, &vertices)?;
 
