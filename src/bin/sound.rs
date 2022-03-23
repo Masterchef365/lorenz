@@ -34,9 +34,11 @@ fn main() -> Result<()> {
 
     let total_samples = (args.total_time * args.sampling_rate as f32) as usize;
 
-    let initial_pos = [1.; 3];
+    let f = 8.;
+    let initial_pos = [f, f - 0.01, f, f + 0.01, f];
+    let forcing = [f, f, f, f + 1.2, f];
     let mut ode = RungeKutta::new(0., initial_pos, args.dt);
-    let lorenz_96 = |_, pos| lorenz(pos, [10., 28., 8. / 3.]);
+    let lorenz_96 = |_, pos| lorenz_96(pos, forcing);
 
     let mut samples = Vec::with_capacity(total_samples);
     for _ in 0..total_samples {
@@ -56,7 +58,6 @@ fn main() -> Result<()> {
         let max_entry = data
             .iter()
             .copied()
-            .map(|x| x.abs())
             .max_by(|a, b| a.partial_cmp(&b).unwrap_or(Ordering::Equal))
             .expect("No data");
         data = data.into_iter().map(|d| d / max_entry).collect();

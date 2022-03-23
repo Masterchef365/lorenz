@@ -2,9 +2,9 @@ pub fn lorenz([x, y, z]: [f32; 3], [sigma, rho, beta]: [f32; 3]) -> [f32; 3] {
     [sigma * (y - x), x * (rho - z) - y, x * y - beta * z]
 }
 
-pub fn lorenz_96<const D: usize>(x: [f32; D], f: f32) -> [f32; D] {
+pub fn lorenz_96<const D: usize>(x: [f32; D], f: [f32; D]) -> [f32; D] {
     let mut deriv = [0.0; D];
-    deriv.iter_mut().enumerate().for_each(|(i, d)| {
+    deriv.iter_mut().zip(f).enumerate().for_each(|(i, (d, f))| {
         let wrap = |k: i32| {
             let idx = i as i32 + k;
             if idx < 0 {
