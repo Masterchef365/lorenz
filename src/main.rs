@@ -30,9 +30,9 @@ fn lorenz_with_time(time: f32) -> (Vec<Vertex>, Vec<u32>) {
             28.,
             8. / 3.,
         ],
-        0.005,
-        30_000,
-        0.5,
+        0.0025,
+        300_000,
+        0.25,
     )
 }
 
@@ -60,7 +60,7 @@ impl App for LorenzViz {
 
         Ok(vec![DrawCmd::new(self.verts)
             .indices(self.indices)
-            //.shader(self.lines_shader)
+            .shader(self.lines_shader)
         ])
     }
 
@@ -102,7 +102,12 @@ fn lorenz_strips(
     let mut alternate = false;
 
     let vertices: Vec<Vertex> = lorenz_ode(initial_pos, coeffs, dt)
-        .filter_map(|(pos, gradient)| {
+        .enumerate()
+        .filter_map(|(idx, (pos, gradient))| {
+            let idx = idx as f32;
+            let i = idx / n as f32;
+            let vel = gradient.mag();
+
             // If there is a last point available...
             let ret = last.map(|last| {
                 let n = (last - pos).cross(gradient).normalized();
@@ -117,7 +122,8 @@ fn lorenz_strips(
             // Make vertex
             let ret = ret.map(|pos| Vertex {
                 //color: [1.; 3], 
-                color: gradient.normalized().into(),
+                //color: gradient.normalized().into(),
+                color: [i, idx, vel],
                 pos: pos.into(),
             });
 
@@ -155,7 +161,7 @@ fn lorenz_lines(
             let idx = idx as f32;
             let i = idx / n as f32;
             let deriv = lorenz(pos, coeffs);
-            let vel = deriv.into_iter().map(|v| v * v).sum::<f32>().sqrt();
+            let vel = Vec3::from(deriv).mag();
             Vertex::new(
                 pos.map(|v| v * scale),
                 [i, idx, vel],
