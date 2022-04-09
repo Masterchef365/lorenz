@@ -16,11 +16,11 @@ fn mix(a: f32, b: f32, t: f32) -> f32 {
     a * (1. - t) + b * t
 }
 
-fn lorenz_with_time(time: f32) -> Vec<Vertex> {
+fn lorenz_with_time(time: f32) -> (Vec<Vertex>, Vec<u32>) {
     let anim = (time.cos() + 1.) / 2.;
     let anim2 = ((time * 1.2).sin() + 1.) / 2.;
     let anim3 = ((time * 1.7 + 2.32).cos() + 1.) / 2.;
-    lorenz_lines(
+    lorenz_strips(
         [1., 1., 1.].into(),
         [
             //mix(0.5, 1., anim3) * 10.,
@@ -31,16 +31,16 @@ fn lorenz_with_time(time: f32) -> Vec<Vertex> {
             8. / 3.,
         ],
         0.005,
-        300_000,
-        [1.; 3],
-        1. / 10.,
+        30_000,
+        0.5,
     )
 }
 
 impl App for LorenzViz {
     fn init(ctx: &mut Context, platform: &mut Platform, _: ()) -> Result<Self> {
-        let vertices = lorenz_with_time(0.);
-        let indices = line_strip_indices(vertices.len());
+        let (vertices, indices) = lorenz_with_time(0.);
+        //let vertices = lorenz_with_time(0.);
+        //let indices = line_strip_indices(vertices.len());
 
         Ok(Self {
             verts: ctx.vertices(&vertices, false)?,
@@ -48,7 +48,7 @@ impl App for LorenzViz {
             lines_shader: ctx.shader(
                 DEFAULT_VERTEX_SHADER,
                 &std::fs::read("./shaders/unlit.frag.spv")?,
-                Primitive::Lines,
+                Primitive::Triangles,
             )?,
             camera: MultiPlatformCamera::new(platform),
         })
@@ -60,7 +60,8 @@ impl App for LorenzViz {
 
         Ok(vec![DrawCmd::new(self.verts)
             .indices(self.indices)
-            .shader(self.lines_shader)])
+            //.shader(self.lines_shader)
+        ])
     }
 
     fn event(
@@ -77,6 +78,68 @@ impl App for LorenzViz {
     }
 }
 
+fn lorenz_ode(initial_pos: Vec3, coeffs: [f32; 3], dt: f32) -> impl Iterator<Item = (Vec3, Vec3)> {
+    let mut ode = RungeKutta::new(0., initial_pos, dt);
+    let f = move |_, pos: Vec3| lorenz(pos.into(), coeffs).into();
+    std::iter::from_fn(move || {
+        let gradient = f(0., ode.y());
+        ode.step(f);
+        Some((ode.y(), gradient))
+    })
+}
+
+fn lorenz_strips(
+    initial_pos: Vec3,
+    coeffs: [f32; 3],
+    dt: f32,
+    n: usize,
+    width: f32,
+) -> (Vec<Vertex>, Vec<u32>) {
+    // Position of last point
+    let mut last: Option<Vec3> = None;
+
+    // Alternate between adding vertices to the left or right
+    let mut alternate = false;
+
+    let vertices: Vec<Vertex> = lorenz_ode(initial_pos, coeffs, dt)
+        .filter_map(|(pos, gradient)| {
+            // If there is a last point available...
+            let ret = last.map(|last| {
+                let n = (last - pos).cross(gradient).normalized();
+                let offset = n * width;
+                if alternate {
+                    pos + offset
+                } else {
+                    pos - offset
+                }
+            });
+
+            // Make vertex
+            let ret = ret.map(|pos| Vertex {
+                //color: [1.; 3], 
+                color: gradient.normalized().into(),
+                pos: pos.into(),
+            });
+
+            last = Some(pos);
+            alternate = !alternate;
+            ret
+        })
+        .take(n)
+        .collect();
+
+    let indices = (0..)
+        .map(|x| [
+            x, x + 1, x + 2, // Double sided
+            x + 2, x + 1, x,
+        ])
+        .flatten()
+        .take(vertices.len() - 2)
+        .collect();
+
+    (vertices, indices)
+}
+
 fn lorenz_lines(
     initial_pos: Vec3,
     coeffs: [f32; 3],
@@ -85,30 +148,22 @@ fn lorenz_lines(
     _color: [f32; 3],
     scale: f32,
 ) -> Vec<Vertex> {
-    let mut ode = RungeKutta::new(0., initial_pos, dt);
-
-    let f = |_, pos: Vec3| lorenz(pos.into(), coeffs).into();
-
-    ode.step(f);
-
-    std::iter::from_fn(|| {
-        ode.step(f);
-        Some(ode.y().into())
-    })
-    .enumerate()
-    .map(|(idx, pos): (usize, [f32; 3])| {
-        let idx = idx as f32;
-        let i = idx / n as f32;
-        let deriv = lorenz(pos, coeffs);
-        let vel = deriv.into_iter().map(|v| v * v).sum::<f32>().sqrt();
-        Vertex::new(
-            pos.map(|v| v * scale),
-            [i, idx, vel],
-            //lorenz(pos, coeffs).map(|v| v.abs().sqrt() * scale),
-        )
-    })
-    .take(n)
-    .collect()
+    lorenz_ode(initial_pos, coeffs, dt)
+        .enumerate()
+        .map(|(idx, (pos, _))| {
+            let pos: [f32; 3] = pos.into();
+            let idx = idx as f32;
+            let i = idx / n as f32;
+            let deriv = lorenz(pos, coeffs);
+            let vel = deriv.into_iter().map(|v| v * v).sum::<f32>().sqrt();
+            Vertex::new(
+                pos.map(|v| v * scale),
+                [i, idx, vel],
+                //lorenz(pos, coeffs).map(|v| v.abs().sqrt() * scale),
+            )
+        })
+        .take(n)
+        .collect()
 }
 
 fn line_strip_indices(n: usize) -> Vec<u32> {
